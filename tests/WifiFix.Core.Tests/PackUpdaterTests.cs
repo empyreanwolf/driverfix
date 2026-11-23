@@ -105,3 +105,20 @@ public class PackUpdaterTests
         Assert.Equal(1, rep.Errors);
     }
 }
+
+public class PackUpdaterQuietTests
+{
+    class CapLog : ILog { public System.Collections.Generic.List<string> Lines = new(); public void Info(string m) => Lines.Add(m); public void Warn(string m) => Lines.Add(m); }
+    class NoneCatalog : ICatalogSource { public CatalogRow? FindBest(string id) => null; public void Download(string u, string f) { } }
+
+    [Fact]
+    public void Chips_without_a_driver_are_not_shown_to_the_user_only_in_the_report()
+    {
+        var root = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "pq_" + System.Guid.NewGuid().ToString("N"));
+        var log = new CapLog();
+        var chip = new KnownChip("Intel", "Old Chip", new[] { @"PCI\VEN_8086&DEV_0001" });
+        new PackUpdater(new NoneCatalog(), log).Run(root, new[] { chip });
+        Assert.DoesNotContain(log.Lines, l => l.Contains("catalog") || l.Contains("manually") || l.Contains("Old Chip"));
+        Assert.Contains("Old Chip", System.IO.File.ReadAllText(System.IO.Path.Combine(root, "PACK-REPORT.txt")));
+    }
+}

@@ -165,8 +165,8 @@ namespace WifiFix.App
             log.Info("Internet found - checking for newer drivers for the offline pack (can take a few minutes)...");
             BeginInvoke(new Action(() => Say("Updating driver pack...", Color.Black)));
             var rep = new PackUpdater(new MsCatalogSource(packRoot), log).Run(packRoot, KnownChips.All.Concat(KnownChips.Extras));
-            log.Info("Pack update done: " + rep.Downloaded + " downloaded, " + rep.UpToDate + " up to date, " +
-                     rep.NotFound + " not in catalog, " + rep.Errors + " errors.");
+            log.Info("Pack update done: " + rep.Downloaded + " new, " + rep.UpToDate + " already up to date" +
+                     (rep.Errors > 0 ? ", " + rep.Errors + " failed" : "") + ".");
             try { PackIndex.Build(packRoot).Save(Path.Combine(packRoot, "index.json")); } catch { }
             BeginInvoke(new Action(() =>
             {
@@ -174,7 +174,7 @@ namespace WifiFix.App
                 if (rep.Errors > 0 && rep.Downloaded == 0 && rep.UpToDate == 0) Say("Pack update failed (" + rep.Errors + " errors) - see log", Color.Red);
                 else if (rep.Downloaded > 0) Say("Pack UPDATED: " + rep.Downloaded + " new, " + rep.UpToDate + " already current", Color.Green);
                 else if (rep.UpToDate > 0) Say("Pack already up to date (" + rep.UpToDate + " checked)", Color.Green);
-                else Say("Nothing found in catalog - see PACK-REPORT.txt", Color.DarkOrange);
+                else Say("No drivers could be downloaded - check the internet and try again", Color.DarkOrange);
             }));
         }
 

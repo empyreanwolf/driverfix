@@ -40,7 +40,7 @@ namespace WifiFix.Core
             var report = new StringBuilder("PACK REPORT " + DateTime.Now + "\r\n");
             foreach (var chip in chips)
             {
-                var result = "notfound"; var status = "not found in catalog (add manually)";
+                var result = "notfound"; var status = "no driver available from Microsoft (skipped)";
                 foreach (var id in chip.HardwareIds)
                 {
                     try
@@ -60,7 +60,7 @@ namespace WifiFix.Core
                 }
                 switch (result) { case "downloaded": downloaded++; break; case "uptodate": upToDate++; break; case "error": errors++; break; default: notFound++; break; }
                 var line = chip.Vendor + " " + chip.Name + " -> " + status;
-                _log.Info(line);
+                if (result != "notfound") _log.Info(line);   // chips with no driver are only listed in PACK-REPORT.txt, not shown to the user
                 report.Append(line).Append("\r\n");
             }
             report.Append("downloaded " + downloaded + ", up to date " + upToDate + ", not found " + notFound + ", errors " + errors + "\r\n");
