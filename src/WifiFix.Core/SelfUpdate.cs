@@ -16,7 +16,7 @@ namespace WifiFix.Core
         public static ReleaseInfo? FromVersionFile(string text)
         {
             var v = (text ?? "").Trim().TrimStart('v', 'V');
-            return Version.TryParse(v, out _) ? new ReleaseInfo(v, RawBase + "DriverFix.exe") : null;
+            return Version.TryParse(v, out _) ? new ReleaseInfo(v, RawBase + "DriverFix.exe?v=" + v) : null;
         }
 
         public static bool IsNewer(string current, string latest) =>
@@ -33,7 +33,7 @@ namespace WifiFix.Core
             ServicePointManager.SecurityProtocol |= (SecurityProtocolType)3072;
             using var wc = new WebClient();
             wc.Headers[HttpRequestHeader.UserAgent] = "DriverFix/" + AppInfo.Version;   // GitHub's API requires a User-Agent
-            return ReleaseParser.FromVersionFile(wc.DownloadString(ReleaseParser.RawBase + "version.txt"));
+            return ReleaseParser.FromVersionFile(wc.DownloadString(ReleaseParser.RawBase + "version.txt?t=" + DateTime.UtcNow.Ticks));
         }
 
         /// <summary>Downloads the release exe to <paramref name="target"/>. Network call.</summary>

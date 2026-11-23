@@ -10,7 +10,7 @@ public class SelfUpdateTests
     {
         var r = ReleaseParser.FromVersionFile("1.10\r\n")!;
         Assert.Equal("1.10", r.Version);
-        Assert.Equal("https://raw.githubusercontent.com/" + AppInfo.Repo + "/main/latest/DriverFix.exe", r.DownloadUrl);
+        Assert.Equal("https://raw.githubusercontent.com/" + AppInfo.Repo + "/main/latest/DriverFix.exe?v=1.10", r.DownloadUrl);
     }
 
     [Theory]
