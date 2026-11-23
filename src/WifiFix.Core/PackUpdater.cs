@@ -34,10 +34,10 @@ namespace WifiFix.Core
             Q("mediatek", "MediaTek Net Driver Update"), Q("mediatek", "MediaTek Wi-Fi"),
             Q("qualcomm", "Qualcomm Atheros Wireless"), Q("qualcomm", "Qualcomm FastConnect"),
             Q("broadcom", "Broadcom Wireless LAN"),
-            Q("audio", "Realtek High Definition Audio"), Q("audio", "Realtek Audio Driver Update"), Q("audio", "Intel Smart Sound Technology"),
-            Q("audio", "Conexant SmartAudio"), Q("audio", "Cirrus Logic Audio"),
-            Q("bluetooth", "Intel Wireless Bluetooth"), Q("bluetooth", "Realtek Bluetooth"), Q("bluetooth", "MediaTek Bluetooth"), Q("bluetooth", "Qualcomm Atheros Bluetooth"),
-            Q("touchpad", "Synaptics Precision Touchpad"), Q("touchpad", "ELAN Touchpad"), Q("touchpad", "Intel Serial IO"), Q("touchpad", "Alps Pointing-device"),
+            Q("audio", "Realtek High Definition Audio"), Q("audio", "Realtek Audio"), Q("audio", "Intel Smart Sound"),
+            Q("audio", "Conexant Audio"),
+            Q("bluetooth", "Intel Bluetooth"), Q("bluetooth", "Realtek Bluetooth"), Q("bluetooth", "MediaTek Bluetooth"), Q("bluetooth", "Qualcomm Bluetooth"),
+            Q("touchpad", "Synaptics Pointing"), Q("touchpad", "Synaptics Mouse"), Q("touchpad", "Elantech"), Q("touchpad", "Intel Serial IO"), Q("touchpad", "Alps Pointing"),
         };
     }
 

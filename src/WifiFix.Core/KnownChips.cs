@@ -80,18 +80,18 @@ namespace WifiFix.Core
         public static readonly IReadOnlyList<KnownChip> Extras = new[]
         {
             C("audio", "Realtek High Definition Audio", "Realtek High Definition Audio"),
-            C("audio", "Realtek Audio (Dell/HP/Lenovo)", "Realtek Audio driver"),
+            C("audio", "Realtek Audio (Dell/HP/Lenovo)", "Realtek Audio"),
             C("audio", "Intel Smart Sound Technology", "Intel Smart Sound Technology"),
-            C("audio", "Conexant SmartAudio", "Conexant SmartAudio"),
+            C("audio", "Conexant SmartAudio", "Conexant Audio"),
             C("audio", "IDT High Definition Audio", "IDT High Definition Audio CODEC"),
-            C("touchpad", "Synaptics Precision Touchpad", "Synaptics Precision Touchpad"),
-            C("touchpad", "Synaptics SMBus TouchPad", "Synaptics SMBus TouchPad"),
-            C("touchpad", "ELAN Touchpad", "ELAN Input Device touchpad"),
-            C("touchpad", "Intel Serial IO (I2C touchpad bus)", "Intel Serial IO I2C Host Controller"),
-            C("touchpad", "Alps Pointing Device", "Alps Pointing-device"),
-            C("bluetooth", "Intel Wireless Bluetooth", "Intel Wireless Bluetooth"),
+            C("touchpad", "Synaptics Precision Touchpad", "Synaptics Pointing"),
+            C("touchpad", "Synaptics SMBus TouchPad", "Synaptics Mouse"),
+            C("touchpad", "ELAN Touchpad", "Elantech"),
+            C("touchpad", "Intel Serial IO (I2C touchpad bus)", "Intel Serial IO"),
+            C("touchpad", "Alps Pointing Device", "Alps Pointing"),
+            C("bluetooth", "Intel Wireless Bluetooth", "Intel Bluetooth"),
             C("bluetooth", "Realtek Bluetooth", "Realtek Bluetooth"),
-            C("bluetooth", "Qualcomm Atheros Bluetooth", "Qualcomm Atheros Bluetooth"),
+            C("bluetooth", "Qualcomm Atheros Bluetooth", "Qualcomm Bluetooth"),
             C("bluetooth", "MediaTek Bluetooth", "MediaTek Bluetooth"),
         };
 
