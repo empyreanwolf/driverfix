@@ -7,3 +7,7 @@ Releases: attach `DriverFix.exe` to a release tagged e.g. `v1.9.2`. Copies of Wi
 the latest release and update themselves with the UPDATE SOFTWARE button.
 
 Build: `dotnet build src/WifiFix.App -c Release` (net48 WinForms). Tests: `dotnet test tests/WifiFix.Core.Tests`.
+
+## Publishing a new version
+Build, then commit `latest/DriverFix.exe` and set `latest/version.txt` to the same version (it must equal the
+version inside the exe). Every DriverFix copy checks `latest/version.txt` and offers the update.

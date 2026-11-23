@@ -10,18 +10,13 @@ namespace WifiFix.Core
 
     public static class ReleaseParser
     {
-        static readonly Regex TagRx = new Regex("\"tag_name\"\\s*:\\s*\"v?([^\"]+)\"");
-        static readonly Regex UrlRx = new Regex("\"browser_download_url\"\\s*:\\s*\"([^\"]+)\"");
+        /// <summary>The newest build is published in the repo as latest/version.txt + latest/DriverFix.exe (no GitHub Releases needed).</summary>
+        public static string RawBase => "https://raw.githubusercontent.com/" + AppInfo.Repo + "/main/latest/";
 
-        /// <summary>Reads a GitHub "latest release" JSON: version from the tag, and the DriverFix.exe asset URL.</summary>
-        public static ReleaseInfo? Parse(string json)
+        public static ReleaseInfo? FromVersionFile(string text)
         {
-            if (string.IsNullOrEmpty(json)) return null;
-            var tag = TagRx.Match(json);
-            if (!tag.Success) return null;
-            var url = UrlRx.Matches(json).Cast<Match>().Select(m => m.Groups[1].Value)
-                .FirstOrDefault(u => u.EndsWith("/DriverFix.exe", StringComparison.OrdinalIgnoreCase));
-            return url == null ? null : new ReleaseInfo(tag.Groups[1].Value, url);
+            var v = (text ?? "").Trim().TrimStart('v', 'V');
+            return Version.TryParse(v, out _) ? new ReleaseInfo(v, RawBase + "DriverFix.exe") : null;
         }
 
         public static bool IsNewer(string current, string latest) =>
@@ -38,7 +33,7 @@ namespace WifiFix.Core
             ServicePointManager.SecurityProtocol |= (SecurityProtocolType)3072;
             using var wc = new WebClient();
             wc.Headers[HttpRequestHeader.UserAgent] = "DriverFix/" + AppInfo.Version;   // GitHub's API requires a User-Agent
-            return ReleaseParser.Parse(wc.DownloadString("https://api.github.com/repos/" + AppInfo.Repo + "/releases/latest"));
+            return ReleaseParser.FromVersionFile(wc.DownloadString(ReleaseParser.RawBase + "version.txt"));
         }
 
         /// <summary>Downloads the release exe to <paramref name="target"/>. Network call.</summary>

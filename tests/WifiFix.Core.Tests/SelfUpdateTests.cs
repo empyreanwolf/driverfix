@@ -5,25 +5,19 @@ using Xunit;
 
 public class SelfUpdateTests
 {
-    const string Json = @"{""url"":""x"",""tag_name"":""v1.10"",""assets"":[
-      {""name"":""README.txt"",""browser_download_url"":""https://github.com/o/r/releases/download/v1.10/README.txt""},
-      {""name"":""DriverFix.exe"",""browser_download_url"":""https://github.com/o/r/releases/download/v1.10/DriverFix.exe""}]}";
-
     [Fact]
-    public void Parses_tag_and_exe_asset_ignoring_other_assets()
+    public void Version_file_gives_version_and_exe_url_in_the_repo()
     {
-        var r = ReleaseParser.Parse(Json)!;
+        var r = ReleaseParser.FromVersionFile("1.10\r\n")!;
         Assert.Equal("1.10", r.Version);
-        Assert.EndsWith("/DriverFix.exe", r.DownloadUrl);
+        Assert.Equal("https://raw.githubusercontent.com/" + AppInfo.Repo + "/main/latest/DriverFix.exe", r.DownloadUrl);
     }
 
-    [Fact]
-    public void Release_without_exe_asset_or_tag_is_null()
-    {
-        Assert.Null(ReleaseParser.Parse(@"{""tag_name"":""v2.0"",""assets"":[]}"));
-        Assert.Null(ReleaseParser.Parse(@"{""message"":""Not Found""}"));
-        Assert.Null(ReleaseParser.Parse(""));
-    }
+    [Theory]
+    [InlineData("")]
+    [InlineData("<html>404: Not Found</html>")]
+    [InlineData("v")]
+    public void Bad_version_file_is_null(string text) => Assert.Null(ReleaseParser.FromVersionFile(text));
 
     [Theory]
     [InlineData("1.8", "1.9", true)]

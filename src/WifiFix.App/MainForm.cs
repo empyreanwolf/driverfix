@@ -88,7 +88,7 @@ namespace WifiFix.App
             {
                 _latest = SelfUpdate.CheckLatest();
                 string t; Color c;
-                if (_latest == null) { t = "DriverFix v" + AppInfo.Version + " - no release found on GitHub (" + AppInfo.Repo + ")"; c = Color.DarkOrange; }
+                if (_latest == null) { t = "DriverFix v" + AppInfo.Version + " - no published version found on GitHub (" + AppInfo.Repo + ")"; c = Color.DarkOrange; }
                 else if (ReleaseParser.IsNewer(AppInfo.Version, _latest.Version)) { t = "DriverFix v" + AppInfo.Version + " - NEW version " + _latest.Version + " available: click UPDATE SOFTWARE"; c = Color.DarkOrange; }
                 else { t = "DriverFix v" + AppInfo.Version + " - up to date (latest on GitHub: " + _latest.Version + ")"; c = Color.Green; }
                 BeginInvoke(new Action(() => { _swInfo.Text = t; _swInfo.ForeColor = c; }));
@@ -111,7 +111,7 @@ namespace WifiFix.App
                     CheckSoftware(true);
                     if (_latest == null || !ReleaseParser.IsNewer(AppInfo.Version, _latest.Version))
                     {
-                        BeginInvoke(new Action(() => Set(_latest == null ? "No release found on GitHub" : "Already the latest version (v" + AppInfo.Version + ")", _latest == null ? Color.DarkOrange : Color.Green)));
+                        BeginInvoke(new Action(() => Set(_latest == null ? "No published version found on GitHub" : "Already the latest version (v" + AppInfo.Version + ")", _latest == null ? Color.DarkOrange : Color.Green)));
                         return;
                     }
                     var exe = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
