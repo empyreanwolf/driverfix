@@ -13,11 +13,33 @@ namespace WifiFix.Core
     {
         /// <summary>Newest Windows 10 driver for the hardware ID, or null.</summary>
         CatalogRow? FindBest(string hardwareId);
+        /// <summary>All catalog rows (first page) for a text search.</summary>
+        IReadOnlyList<CatalogRow> Search(string query);
         /// <summary>Downloads and extracts the update's driver files into <paramref name="folder"/>.</summary>
         void Download(string updateId, string folder);
     }
 
     public record UpdateReport(int Downloaded, int UpToDate, int NotFound, int Errors);
+
+    /// <summary>A vendor-wide catalog search used to sweep up every current driver family; Category is the pack folder.</summary>
+    public record SweepQuery(string Category, string Query);
+
+    public static class SweepQueries
+    {
+        static SweepQuery Q(string c, string q) => new SweepQuery(c, q);
+        public static readonly IReadOnlyList<SweepQuery> All = new[]
+        {
+            Q("intel", "Intel net Driver Update"), Q("intel", "Intel Wi-Fi"), Q("intel", "Intel Wireless-AC"),
+            Q("realtek", "Realtek Semiconductor Net Driver Update"), Q("realtek", "Realtek PCIe Wireless LAN"),
+            Q("mediatek", "MediaTek Net Driver Update"), Q("mediatek", "MediaTek Wi-Fi"),
+            Q("qualcomm", "Qualcomm Atheros Wireless"), Q("qualcomm", "Qualcomm FastConnect"),
+            Q("broadcom", "Broadcom Wireless LAN"),
+            Q("audio", "Realtek High Definition Audio"), Q("audio", "Realtek Audio Driver Update"), Q("audio", "Intel Smart Sound Technology"),
+            Q("audio", "Conexant SmartAudio"), Q("audio", "Cirrus Logic Audio"),
+            Q("bluetooth", "Intel Wireless Bluetooth"), Q("bluetooth", "Realtek Bluetooth"), Q("bluetooth", "MediaTek Bluetooth"), Q("bluetooth", "Qualcomm Atheros Bluetooth"),
+            Q("touchpad", "Synaptics Precision Touchpad"), Q("touchpad", "ELAN Touchpad"), Q("touchpad", "Intel Serial IO"), Q("touchpad", "Alps Pointing-device"),
+        };
+    }
 
     /// <summary>Refreshes the offline pack: for each known chip, fetches the newest catalog driver unless the pack already has it.</summary>
     public class PackUpdater
@@ -67,6 +89,54 @@ namespace WifiFix.Core
             try { File.WriteAllText(Path.Combine(driversRoot, "PACK-REPORT.txt"), report.ToString()); } catch { }
             return new UpdateReport(downloaded, upToDate, notFound, errors);
         }
+
+        const int MaxFamiliesPerQuery = 6;
+        static readonly System.Text.RegularExpressions.Regex FamilyNoise = new System.Text.RegularExpressions.Regex(@"[\d\.\(\)]+");
+
+        /// <summary>
+        /// Vendor-wide sweep: for each search, keeps only Windows 10 drivers, the newest update of each driver family
+        /// (title without version numbers), and downloads any the pack does not have yet.
+        /// </summary>
+        public UpdateReport Sweep(string driversRoot, IEnumerable<SweepQuery> queries)
+        {
+            try { Directory.CreateDirectory(driversRoot); }
+            catch (Exception e) { _log.Warn("Cannot write to the drivers folder: " + e.Message); return new UpdateReport(0, 0, 0, 1); }
+            var statePath = Path.Combine(driversRoot, "pack-state.txt");
+            var state = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            try { if (File.Exists(statePath)) foreach (var l in File.ReadAllLines(statePath)) if (l.Trim().Length > 0) state.Add(l.Trim()); } catch { }
+            int downloaded = 0, upToDate = 0, errors = 0;
+            var report = new StringBuilder("SWEEP " + DateTime.Now + "\r\n");
+            foreach (var q in queries)
+            {
+                try
+                {
+                    var best = _cat.Search(q.Query)
+                        .Where(r => r.Products.IndexOf("Windows 10", StringComparison.OrdinalIgnoreCase) >= 0
+                                 && r.Classification.IndexOf("Driver", StringComparison.OrdinalIgnoreCase) >= 0)
+                        .GroupBy(r => FamilyNoise.Replace(r.Title, "").Trim())
+                        .Select(g => g.OrderByDescending(r => DateTime.TryParse(r.LastUpdated, System.Globalization.CultureInfo.GetCultureInfo("en-US"),
+                                                              System.Globalization.DateTimeStyles.None, out var d) ? d : DateTime.MinValue).First())
+                        .OrderByDescending(r => DateTime.TryParse(r.LastUpdated, System.Globalization.CultureInfo.GetCultureInfo("en-US"),
+                                                              System.Globalization.DateTimeStyles.None, out var d2) ? d2 : DateTime.MinValue)
+                        .Take(MaxFamiliesPerQuery).ToList();
+                    foreach (var row in best)
+                    {
+                        if (state.Contains(row.UpdateId)) { upToDate++; continue; }
+                        var folder = Path.Combine(driversRoot, "win10", q.Category.ToLowerInvariant(), KnownChips.SafeName(row.Title) + "_" + row.UpdateId.Substring(0, 8));
+                        try
+                        {
+                            _cat.Download(row.UpdateId, folder);
+                            state.Add(row.UpdateId); File.WriteAllLines(statePath, state);
+                            downloaded++; _log.Info("Downloaded: " + row.Title); report.Append("downloaded: " + row.Title + "\r\n");
+                        }
+                        catch (Exception e) { errors++; _log.Warn(row.Title + ": " + e.Message); report.Append("ERROR " + row.Title + ": " + e.Message + "\r\n"); }
+                    }
+                }
+                catch (Exception e) { errors++; _log.Warn(q.Query + ": " + e.Message); }
+            }
+            try { File.AppendAllText(Path.Combine(driversRoot, "PACK-REPORT.txt"), report.ToString()); } catch { }
+            return new UpdateReport(downloaded, upToDate, 0, errors);
+        }
     }
 
     /// <summary>Real Microsoft Update Catalog access (needs internet; Windows for expand.exe).</summary>
@@ -89,18 +159,20 @@ namespace WifiFix.Core
             return wc;
         }
 
-        public CatalogRow? FindBest(string hardwareId)
+        public CatalogRow? FindBest(string hardwareId) => CatalogParser.PickBest(Search(hardwareId));
+
+        public IReadOnlyList<CatalogRow> Search(string query)
         {
             string html;
-            using (var wc = Client()) html = wc.DownloadString(Base + "Search.aspx?q=" + Uri.EscapeDataString(hardwareId));
+            using (var wc = Client()) html = wc.DownloadString(Base + "Search.aspx?q=" + Uri.EscapeDataString(query));
             Thread.Sleep(300); // be polite to the catalog
             var rows = CatalogParser.ParseSearch(html);
             if (rows.Count == 0 && !_debugSaved && _debugDir != null)
             {
                 _debugSaved = true; // keep ONE sample of a page we could not read, so it can be fixed
-                try { Directory.CreateDirectory(_debugDir); File.WriteAllText(Path.Combine(_debugDir, "debug-search.html"), "<!-- query: " + hardwareId + " -->\r\n" + html); } catch { }
+                try { Directory.CreateDirectory(_debugDir); File.WriteAllText(Path.Combine(_debugDir, "debug-search.html"), "<!-- query: " + query + " -->\r\n" + html); } catch { }
             }
-            return CatalogParser.PickBest(rows);
+            return rows;
         }
 
         public void Download(string updateId, string folder)

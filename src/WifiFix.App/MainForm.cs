@@ -140,7 +140,7 @@ namespace WifiFix.App
         /// <summary>Button: refresh the offline pack now, with clear feedback in the banner.</summary>
         void UpdateNow()
         {
-            SetBusy(true); Set("Updating driver pack... (a few minutes)", Color.Black);
+            SetBusy(true); Set("Updating driver pack... (first time: 10-30+ min)", Color.Black);
             Task.Run(() =>
             {
                 try { AutoUpdatePack(); }
@@ -164,7 +164,11 @@ namespace WifiFix.App
             }
             log.Info("Internet found - checking for newer drivers for the offline pack (can take a few minutes)...");
             BeginInvoke(new Action(() => Say("Updating driver pack...", Color.Black)));
-            var rep = new PackUpdater(new MsCatalogSource(packRoot), log).Run(packRoot, KnownChips.All.Concat(KnownChips.Extras));
+            log.Info("First run downloads a lot and can take 10-30+ minutes. Later runs only fetch what is new.");
+            var updater = new PackUpdater(new MsCatalogSource(packRoot), log);
+            var r1 = updater.Run(packRoot, KnownChips.All.Concat(KnownChips.Extras));     // named chips
+            var r2 = updater.Sweep(packRoot, SweepQueries.All);                          // everything else current, by vendor
+            var rep = new UpdateReport(r1.Downloaded + r2.Downloaded, r1.UpToDate + r2.UpToDate, 0, r1.Errors + r2.Errors);
             log.Info("Pack update done: " + rep.Downloaded + " new, " + rep.UpToDate + " already up to date" +
                      (rep.Errors > 0 ? ", " + rep.Errors + " failed" : "") + ".");
             try { PackIndex.Build(packRoot).Save(Path.Combine(packRoot, "index.json")); } catch { }

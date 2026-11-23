@@ -12,6 +12,12 @@ public class PackUpdaterTests
         public Dictionary<string, CatalogRow> Rows = new();
         public HashSet<string> Throw = new();
         public List<string> Downloaded = new();
+        public Dictionary<string, List<CatalogRow>> SearchRows = new();
+        public IReadOnlyList<CatalogRow> Search(string query)
+        {
+            if (Throw.Contains(query)) throw new Exception("boom " + query);
+            return SearchRows.TryGetValue(query, out var r) ? r : new List<CatalogRow>();
+        }
         public CatalogRow? FindBest(string id)
         {
             if (Throw.Contains(id)) throw new Exception("boom " + id);
@@ -109,7 +115,7 @@ public class PackUpdaterTests
 public class PackUpdaterQuietTests
 {
     class CapLog : ILog { public System.Collections.Generic.List<string> Lines = new(); public void Info(string m) => Lines.Add(m); public void Warn(string m) => Lines.Add(m); }
-    class NoneCatalog : ICatalogSource { public CatalogRow? FindBest(string id) => null; public void Download(string u, string f) { } }
+    class NoneCatalog : ICatalogSource { public System.Collections.Generic.IReadOnlyList<CatalogRow> Search(string q) => new CatalogRow[0]; public CatalogRow? FindBest(string id) => null; public void Download(string u, string f) { } }
 
     [Fact]
     public void Chips_without_a_driver_are_not_shown_to_the_user_only_in_the_report()
@@ -120,5 +126,63 @@ public class PackUpdaterQuietTests
         new PackUpdater(new NoneCatalog(), log).Run(root, new[] { chip });
         Assert.DoesNotContain(log.Lines, l => l.Contains("catalog") || l.Contains("manually") || l.Contains("Old Chip"));
         Assert.Contains("Old Chip", System.IO.File.ReadAllText(System.IO.Path.Combine(root, "PACK-REPORT.txt")));
+    }
+}
+
+public class PackSweepTests
+{
+    class Cat : ICatalogSource
+    {
+        public System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<CatalogRow>> Rows = new();
+        public System.Collections.Generic.HashSet<string> Throw = new();
+        public System.Collections.Generic.List<string> Downloaded = new();
+        public System.Collections.Generic.IReadOnlyList<CatalogRow> Search(string q)
+        {
+            if (Throw.Contains(q)) throw new System.Exception("boom");
+            return Rows.TryGetValue(q, out var r) ? r : new System.Collections.Generic.List<CatalogRow>();
+        }
+        public CatalogRow? FindBest(string id) => null;
+        public void Download(string id, string folder) { Downloaded.Add(id); System.IO.Directory.CreateDirectory(folder); System.IO.File.WriteAllText(System.IO.Path.Combine(folder, "a.inf"), "x"); }
+    }
+    class NoLog : ILog { public void Info(string m) { } public void Warn(string m) { } }
+    static CatalogRow R(string id, string title, string date, string products = "Windows 10 and later drivers", string cls = "Drivers (Networking)") =>
+        new(id, title, products, cls, date, "n/a");
+    static string Root() { var d = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "sw_" + System.Guid.NewGuid().ToString("N")); System.IO.Directory.CreateDirectory(d); return d; }
+    static readonly SweepQuery Q = new("intel", "Intel net Driver Update");
+    const string A = "aaaaaaaa-0000-0000-0000-000000000001", B = "bbbbbbbb-0000-0000-0000-000000000002", C = "cccccccc-0000-0000-0000-000000000003", D = "dddddddd-0000-0000-0000-000000000004";
+
+    [Fact]
+    public void Keeps_only_the_newest_update_per_driver_family_and_only_windows10_drivers()
+    {
+        var cat = new Cat();
+        cat.Rows[Q.Query] = new() {
+            R(A, "Intel - net - 22.200.0.6", "1/10/2023"),
+            R(B, "Intel - net - 24.40.0.4", "4/15/2026"),                 // same family, newer -> only this one
+            R(C, "Realtek - Net - 2024.0.4.208", "1/1/2025"),             // different family -> also downloaded
+            R(D, "Intel - net - 25.0.0.1", "5/1/2026", "Windows 7 drivers"),   // not Windows 10 -> ignored
+        };
+        var rep = new PackUpdater(cat, new NoLog()).Sweep(Root(), new[] { Q });
+        Assert.Equal(2, rep.Downloaded);
+        Assert.Equal(new[] { B, C }, cat.Downloaded.OrderBy(x => x).ToArray());
+    }
+
+    [Fact]
+    public void Already_downloaded_updates_are_up_to_date_and_errors_do_not_stop_the_sweep()
+    {
+        var cat = new Cat(); var root = Root();
+        cat.Rows[Q.Query] = new() { R(B, "Intel - net - 24.40.0.4", "4/15/2026") };
+        new PackUpdater(cat, new NoLog()).Sweep(root, new[] { Q });
+        var bad = new SweepQuery("realtek", "bad query"); cat.Throw.Add(bad.Query);
+        var rep = new PackUpdater(cat, new NoLog()).Sweep(root, new[] { bad, Q });
+        Assert.Equal(0, rep.Downloaded);
+        Assert.Equal(1, rep.UpToDate);
+        Assert.Equal(1, rep.Errors);
+    }
+
+    [Fact]
+    public void Sweep_queries_cover_all_vendors_and_device_types()
+    {
+        var cats = SweepQueries.All.Select(q => q.Category).Distinct().ToList();
+        foreach (var c in new[] { "intel", "realtek", "mediatek", "qualcomm", "broadcom", "audio", "bluetooth", "touchpad" }) Assert.Contains(c, cats);
     }
 }
