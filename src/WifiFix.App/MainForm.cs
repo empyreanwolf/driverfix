@@ -215,8 +215,9 @@ namespace WifiFix.App
             if (_dryRun) return DryRun(log, index, _includeAudio, _includeOther);
             if (_forceInstall) return ForceInstall(log, machine);
             var online = new FallbackOnlineProvider(new CatalogOnlineProvider(log, machine), new WuaOnlineProvider(log));
-            var runner = new FixRunner(new WmiDeviceScanner(), new WifiVerifier(), index,
-                new PnpUtil(new ProcessRunner()), online, packRoot, log, null, _includeAudio, _includeOther);
+            var scanner = new WmiDeviceScanner();
+            var runner = new FixRunner(scanner, new WifiVerifier(), index,
+                new PnpUtil(new ProcessRunner()), online, packRoot, log, null, _includeAudio, _includeOther, scanner);
             return runner.Run();
         }
 

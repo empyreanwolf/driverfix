@@ -51,8 +51,20 @@ namespace WifiFix.App
         }
     }
 
-    class WmiDeviceScanner : IDeviceScanner
+    class WmiDeviceScanner : IDeviceScanner, IHardwareInventory
     {
+        /// <summary>Everything WiFi/audio/touchpad/Bluetooth-related Windows lists, working or not.</summary>
+        public IReadOnlyList<DeviceInfo> ScanAll()
+        {
+            var list = new List<DeviceInfo>();
+            using var s = new ManagementObjectSearcher(
+                "SELECT Name, PNPClass, ConfigManagerErrorCode, HardwareID, CompatibleID FROM Win32_PnPEntity WHERE ConfigManagerErrorCode <> 0 OR PNPClass = 'Net' OR PNPClass = 'MEDIA' OR PNPClass = 'Mouse' OR PNPClass = 'HIDClass' OR PNPClass = 'Bluetooth' OR PNPClass = 'System'");
+            foreach (ManagementObject o in s.Get())
+                list.Add(new DeviceInfo((o["Name"] as string) ?? "Unknown device", (o["PNPClass"] as string) ?? "", Convert.ToInt32(o["ConfigManagerErrorCode"]),
+                    (o["HardwareID"] as string[]) ?? new string[0], (o["CompatibleID"] as string[]) ?? new string[0]));
+            return list;
+        }
+
         /// <summary>Working WiFi adapters (used only by the forced install test).</summary>
         public IReadOnlyList<DeviceInfo> ScanWifiPresent()
         {
@@ -229,8 +241,12 @@ namespace WifiFix.App
             for (var i = 0; i < 10; i++) { if (Check()) return true; Thread.Sleep(1500); }
             return false;
         }
-        static bool Check() => NetworkInterface.GetAllNetworkInterfaces()
-            .Any(n => n.NetworkInterfaceType == NetworkInterfaceType.Wireless80211);
+        /// <summary>The PC's own (non-USB) WiFi adapter with a working driver. A plugged-in USB WiFi dongle does not count.</summary>
+        static bool Check()
+        {
+            try { return new WmiDeviceScanner().ScanAll().Any(d => d.ProblemCode == 0 && HardwareReport.Classify(d) == HwKind.WiFi); }
+            catch { return false; }
+        }
     }
 
     /// <summary>Uses the Windows Update Agent to find a driver for the device, downloads its CAB(s), extracts with expand.exe.</summary>

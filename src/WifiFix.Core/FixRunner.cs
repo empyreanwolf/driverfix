@@ -20,17 +20,24 @@ namespace WifiFix.Core
         readonly MachineInfo? _machine;
 
         public FixRunner(IDeviceScanner scanner, IWifiVerifier verifier, PackIndex index, PnpUtil pnp,
-            IOnlineProvider online, string packRoot, ILog log, MachineInfo? machine = null, bool includeAudio = false, bool includeOther = false)
+            IOnlineProvider online, string packRoot, ILog log, MachineInfo? machine = null, bool includeAudio = false, bool includeOther = false, IHardwareInventory? inventory = null)
         {
+            _inventory = inventory;
             _scanner = scanner; _verifier = verifier; _index = index; _pnp = pnp;
             _online = online; _packRoot = packRoot; _log = log; _machine = machine; _includeAudio = includeAudio; _includeOther = includeOther;
         }
 
         readonly bool _includeAudio, _includeOther;
+        readonly IHardwareInventory? _inventory;
 
         public RunOutcome Run()
         {
             if (_machine != null) _log.Info("PC: " + _machine.Describe());
+            if (_inventory != null)
+            {
+                try { foreach (var l in HardwareReport.Build(_inventory.ScanAll())) _log.Info(l); }
+                catch (Exception e) { _log.Warn("Hardware check failed: " + e.Message); }
+            }
             var devices = _scanner.Scan();
             var wifi = devices.Where(d => DeviceFilter.IsMissingWifi(d, _index)).ToList();
             var audio = _includeAudio

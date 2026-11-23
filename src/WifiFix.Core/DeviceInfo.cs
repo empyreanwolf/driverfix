@@ -18,14 +18,14 @@ namespace WifiFix.Core
         public static bool IsMissingWifi(DeviceInfo d, PackIndex index)
         {
             if (d.ProblemCode != 28) return false;
+            if (HardwareReport.IsUsbOnly(d)) return false;   // a plug-in USB WiFi dongle is not the PC's own WiFi
             if (d.Name.IndexOf("bluetooth", StringComparison.OrdinalIgnoreCase) >= 0) return false;
             if (WifiWords.Any(w => d.Name.IndexOf(w, StringComparison.OrdinalIgnoreCase) >= 0)) return true;
             // PCI class 0x0280 = "other network controller", which is how WiFi cards identify themselves.
             if (d.AllIds.Any(i => i.IndexOf("&CC_0280", StringComparison.OrdinalIgnoreCase) >= 0)) return true;
             if (LooksAudio(d)) return false; // a pack match for an audio driver must not make it a "WiFi" device
-            // Only PCI/USB devices can be guessed as WiFi from a pack match; ACPI/HID are touchpads, sensors etc.
-            var netIds = d.AllIds.Where(i => i.StartsWith(@"PCI\", StringComparison.OrdinalIgnoreCase)
-                                          || i.StartsWith(@"USB\", StringComparison.OrdinalIgnoreCase)).ToList();
+            // Only PCI devices can be guessed as WiFi from a pack match; ACPI/HID are touchpads, sensors etc.
+            var netIds = d.AllIds.Where(i => i.StartsWith(@"PCI\", StringComparison.OrdinalIgnoreCase)).ToList();
             return netIds.Count > 0 && index.FindInf(netIds) != null;
         }
 

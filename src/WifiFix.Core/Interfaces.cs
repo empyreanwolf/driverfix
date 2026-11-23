@@ -8,6 +8,9 @@ namespace WifiFix.Core
 
     public interface IDeviceScanner { IReadOnlyList<DeviceInfo> Scan(); }
 
+    /// <summary>Every WiFi/audio/touchpad/Bluetooth-related device Windows lists, working or not.</summary>
+    public interface IHardwareInventory { IReadOnlyList<DeviceInfo> ScanAll(); }
+
     public interface IOnlineProvider
     {
         bool HasInternet();
