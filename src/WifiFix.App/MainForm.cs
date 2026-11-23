@@ -35,22 +35,22 @@ namespace WifiFix.App
             _update.Text = "Also update the driver pack automatically after fixing (when online)"; _update.Dock = DockStyle.Top; _update.Height = 26; _update.Checked = autoUpdate;
             _audio.Text = "Also fix audio drivers (optional)"; _audio.Dock = DockStyle.Top; _audio.Height = 26; _audio.Checked = audio;
             _dry.Text = "Test only (scan and report, install nothing)"; _dry.Dock = DockStyle.Top; _dry.Height = 26; _dry.Checked = dry;
-            Text = "WifiFix v" + AppInfo.Version + " - 1-click WiFi driver";
+            Text = "DriverFix v" + AppInfo.Version + " - 1-click WiFi driver";
             Width = 680; Height = 600; StartPosition = FormStartPosition.CenterScreen;
             _go.Text = "FIX WIFI"; _go.Font = new Font("Segoe UI", 22, FontStyle.Bold);
             _go.Dock = DockStyle.Top; _go.Height = 90; _go.Click += (s, e) => Start();
             _updateBtn.Text = "UPDATE DRIVER PACK (needs internet)"; _updateBtn.Font = new Font("Segoe UI", 12, FontStyle.Bold);
             _updateBtn.Dock = DockStyle.Top; _updateBtn.Height = 44; _updateBtn.Click += (s, e) => UpdateNow();
-            _swBtn.Text = "UPDATE SOFTWARE (get latest WifiFix from GitHub)"; _swBtn.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+            _swBtn.Text = "UPDATE SOFTWARE (get latest DriverFix from GitHub)"; _swBtn.Font = new Font("Segoe UI", 10, FontStyle.Bold);
             _swBtn.Dock = DockStyle.Top; _swBtn.Height = 36; _swBtn.Click += (s, e) => UpdateSoftware();
-            _swInfo.Dock = DockStyle.Top; _swInfo.Height = 22; _swInfo.Font = new Font("Segoe UI", 9); _swInfo.Text = "WifiFix v" + AppInfo.Version + " - checking for a newer version...";
+            _swInfo.Dock = DockStyle.Top; _swInfo.Height = 22; _swInfo.Font = new Font("Segoe UI", 9); _swInfo.Text = "DriverFix v" + AppInfo.Version + " - checking for a newer version...";
             _packInfo.Dock = DockStyle.Top; _packInfo.Height = 22; _packInfo.Font = new Font("Segoe UI", 9); _packInfo.Text = PackStatus.Read(PackRoot).Describe();
             _banner.Dock = DockStyle.Top; _banner.Height = 40; _banner.TextAlign = ContentAlignment.MiddleCenter;
             _banner.Font = new Font("Segoe UI", 14, FontStyle.Bold); _banner.Text = "Click the button";
             _log.Multiline = true; _log.ReadOnly = true; _log.ScrollBars = ScrollBars.Vertical;
             _log.Dock = DockStyle.Fill; _log.Font = new Font("Consolas", 10);
             Controls.Add(_log); Controls.Add(_packInfo); Controls.Add(_swInfo); Controls.Add(_banner); Controls.Add(_update); Controls.Add(_other); Controls.Add(_audio); Controls.Add(_dry); Controls.Add(_updateBtn); Controls.Add(_swBtn); Controls.Add(_go);
-            AddLine("WifiFix v" + AppInfo.Version);
+            AddLine("DriverFix v" + AppInfo.Version);
             SelfUpdate.CleanupOld(AppDomain.CurrentDomain.BaseDirectory);
             Shown += (s, e) => Task.Run(() => CheckSoftware(false));
             if (auto) Shown += (s, e) => Start();
@@ -88,19 +88,19 @@ namespace WifiFix.App
             {
                 _latest = SelfUpdate.CheckLatest();
                 string t; Color c;
-                if (_latest == null) { t = "WifiFix v" + AppInfo.Version + " - no release found on GitHub (" + AppInfo.Repo + ")"; c = Color.DarkOrange; }
-                else if (ReleaseParser.IsNewer(AppInfo.Version, _latest.Version)) { t = "WifiFix v" + AppInfo.Version + " - NEW version " + _latest.Version + " available: click UPDATE SOFTWARE"; c = Color.DarkOrange; }
-                else { t = "WifiFix v" + AppInfo.Version + " - up to date (latest on GitHub: " + _latest.Version + ")"; c = Color.Green; }
+                if (_latest == null) { t = "DriverFix v" + AppInfo.Version + " - no release found on GitHub (" + AppInfo.Repo + ")"; c = Color.DarkOrange; }
+                else if (ReleaseParser.IsNewer(AppInfo.Version, _latest.Version)) { t = "DriverFix v" + AppInfo.Version + " - NEW version " + _latest.Version + " available: click UPDATE SOFTWARE"; c = Color.DarkOrange; }
+                else { t = "DriverFix v" + AppInfo.Version + " - up to date (latest on GitHub: " + _latest.Version + ")"; c = Color.Green; }
                 BeginInvoke(new Action(() => { _swInfo.Text = t; _swInfo.ForeColor = c; }));
             }
             catch (Exception e)
             {
                 AddLine("Update check failed: " + e.Message);
-                BeginInvoke(new Action(() => { _swInfo.Text = "WifiFix v" + AppInfo.Version + " - could not check for updates (no internet?)"; _swInfo.ForeColor = Color.Red; }));
+                BeginInvoke(new Action(() => { _swInfo.Text = "DriverFix v" + AppInfo.Version + " - could not check for updates (no internet?)"; _swInfo.ForeColor = Color.Red; }));
             }
         }
 
-        /// <summary>Button: download the newest WifiFix.exe from GitHub, swap it in and restart.</summary>
+        /// <summary>Button: download the newest DriverFix.exe from GitHub, swap it in and restart.</summary>
         void UpdateSoftware()
         {
             SetBusy(true); _swBtn.Enabled = false; Set("Checking GitHub for a new version...", Color.Black);
@@ -115,8 +115,8 @@ namespace WifiFix.App
                         return;
                     }
                     var exe = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
-                    var tmp = Path.Combine(Path.GetDirectoryName(exe), "WifiFix.new");
-                    AddLine("Downloading WifiFix v" + _latest.Version + " ...");
+                    var tmp = Path.Combine(Path.GetDirectoryName(exe), "DriverFix.new");
+                    AddLine("Downloading DriverFix v" + _latest.Version + " ...");
                     BeginInvoke(new Action(() => Set("Downloading v" + _latest.Version + "...", Color.Black)));
                     SelfUpdate.Download(_latest, tmp);
                     SelfUpdate.Swap(exe, tmp);
@@ -187,7 +187,7 @@ namespace WifiFix.App
             // Always rescan the INFs: a driver dropped onto the stick is found without rebuilding index.json.
             PackIndex index;
             if (Directory.Exists(packRoot)) index = PackIndex.Build(packRoot);
-            else { log.Warn("No drivers folder next to WifiFix.exe; offline pack is empty."); index = new PackIndex(); }
+            else { log.Warn("No drivers folder next to DriverFix.exe; offline pack is empty."); index = new PackIndex(); }
             try { if (Directory.Exists(packRoot)) index.Save(indexPath); } catch { /* read-only stick */ }
             log.Info("Driver pack entries: " + index.Count);
             var machine = MachineScanner.Read();
@@ -292,7 +292,7 @@ namespace WifiFix.App
                 catch { }
             };
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
-            Application.ThreadException += (s, e) => { report(e.Exception); MessageBox.Show("WifiFix hit an error: " + e.Exception.Message + "\r\nSaved to logs\\crash.log", "WifiFix"); };
+            Application.ThreadException += (s, e) => { report(e.Exception); MessageBox.Show("DriverFix hit an error: " + e.Exception.Message + "\r\nSaved to logs\\crash.log", "WifiFix"); };
             AppDomain.CurrentDomain.UnhandledException += (s, e) => report(e.ExceptionObject as Exception ?? new Exception("unknown"));
             var dry = Array.IndexOf(args, "/dryrun") >= 0;
             MainForm.ForceInstallFlag = Array.IndexOf(args, "/forceinstall") >= 0;

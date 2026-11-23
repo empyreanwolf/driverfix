@@ -85,10 +85,7 @@ namespace WifiFix.Core
         static WebClient Client()
         {
             var wc = new WebClient { Encoding = Encoding.UTF8 };
-            // The catalog can return an empty/blocked page to clients without a browser User-Agent.
-            wc.Headers[HttpRequestHeader.UserAgent] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36";
-            wc.Headers[HttpRequestHeader.Accept] = "text/html,application/xhtml+xml";
-            wc.Headers[HttpRequestHeader.AcceptLanguage] = "en-US,en;q=0.9";
+            // NO browser User-Agent: with one, the catalog answers with a "use Internet Explorer" page and zero results.
             return wc;
         }
 

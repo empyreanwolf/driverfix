@@ -35,7 +35,7 @@ namespace WifiFix.App
         public UiLog(Action<string> sink, string logFolder)
         {
             _sink = sink;
-            _file = Path.Combine(logFolder, "wififix-" + DateTime.Now.ToString("yyyyMMdd") + ".log");
+            _file = Path.Combine(logFolder, "driverfix-" + DateTime.Now.ToString("yyyyMMdd") + ".log");
         }
         public void Info(string m) => Write(m);
         public void Warn(string m) => Write("WARNING: " + m);
