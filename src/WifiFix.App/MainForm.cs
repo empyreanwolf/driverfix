@@ -31,25 +31,41 @@ namespace WifiFix.App
 
         public MainForm(bool auto, bool dry = false, bool audio = false, bool autoUpdate = true, bool other = false)
         {
-            _other.Text = "Also fix touchpad / mouse / Bluetooth / other (optional)"; _other.Dock = DockStyle.Top; _other.Height = 26; _other.Checked = other;
-            _update.Text = "Also update the driver pack automatically after fixing (when online)"; _update.Dock = DockStyle.Top; _update.Height = 26; _update.Checked = autoUpdate;
-            _audio.Text = "Also fix audio drivers (optional)"; _audio.Dock = DockStyle.Top; _audio.Height = 26; _audio.Checked = audio;
-            _dry.Text = "Test only (scan and report, install nothing)"; _dry.Dock = DockStyle.Top; _dry.Height = 26; _dry.Checked = dry;
-            Text = "DriverFix v" + AppInfo.Version + " - 1-click WiFi driver";
-            Width = 680; Height = 600; StartPosition = FormStartPosition.CenterScreen;
-            _go.Text = "FIX WIFI"; _go.Font = new Font("Segoe UI", 22, FontStyle.Bold);
-            _go.Dock = DockStyle.Top; _go.Height = 90; _go.Click += (s, e) => Start();
-            _updateBtn.Text = "UPDATE DRIVER PACK (needs internet)"; _updateBtn.Font = new Font("Segoe UI", 12, FontStyle.Bold);
-            _updateBtn.Dock = DockStyle.Top; _updateBtn.Height = 44; _updateBtn.Click += (s, e) => UpdateNow();
-            _swBtn.Text = "UPDATE SOFTWARE (get latest DriverFix from GitHub)"; _swBtn.Font = new Font("Segoe UI", 10, FontStyle.Bold);
-            _swBtn.Dock = DockStyle.Top; _swBtn.Height = 36; _swBtn.Click += (s, e) => UpdateSoftware();
-            _swInfo.Dock = DockStyle.Top; _swInfo.Height = 22; _swInfo.Font = new Font("Segoe UI", 9); _swInfo.Text = "DriverFix v" + AppInfo.Version + " - checking for a newer version...";
-            _packInfo.Dock = DockStyle.Top; _packInfo.Height = 22; _packInfo.Font = new Font("Segoe UI", 9); _packInfo.Text = PackStatus.Read(PackRoot).Describe();
-            _banner.Dock = DockStyle.Top; _banner.Height = 40; _banner.TextAlign = ContentAlignment.MiddleCenter;
-            _banner.Font = new Font("Segoe UI", 14, FontStyle.Bold); _banner.Text = "Click the button";
-            _log.Multiline = true; _log.ReadOnly = true; _log.ScrollBars = ScrollBars.Vertical;
-            _log.Dock = DockStyle.Fill; _log.Font = new Font("Consolas", 10);
-            Controls.Add(_log); Controls.Add(_packInfo); Controls.Add(_swInfo); Controls.Add(_banner); Controls.Add(_update); Controls.Add(_other); Controls.Add(_audio); Controls.Add(_dry); Controls.Add(_updateBtn); Controls.Add(_swBtn); Controls.Add(_go);
+            // Look: Radix Themes (slate neutrals, green accent, 8px radius). Radix itself is a React library and cannot run in
+            // WinForms, so its colour scale, radius and spacing are reproduced here.
+            Text = "DriverFix v" + AppInfo.Version + " - detect PC and install drivers";
+            Width = 700; Height = 640; StartPosition = FormStartPosition.CenterScreen;
+            BackColor = Radix.Slate1; ForeColor = Radix.Slate12; Font = new Font("Segoe UI", 9.5f); Padding = new Padding(16);
+
+            foreach (var c in new[] { _other, _audio, _dry, _update }) { c.Dock = DockStyle.Top; c.Height = 28; c.ForeColor = Radix.Slate12; c.FlatStyle = FlatStyle.System; }
+            _other.Text = "Also fix touchpad / mouse / Bluetooth / other (optional)"; _other.Checked = other;
+            _update.Text = "Also update the driver pack automatically after fixing (when online)"; _update.Checked = autoUpdate;
+            _audio.Text = "Also fix audio drivers (optional)"; _audio.Checked = audio;
+            _dry.Text = "Test only (scan and report, install nothing)"; _dry.Checked = dry;
+
+            _go.Text = "Detect PC and install drivers"; _go.Font = new Font("Segoe UI", 20, FontStyle.Bold);
+            _go.Dock = DockStyle.Top; _go.Height = 84; _go.Click += (s, e) => Start();
+            Radix.Style(_go, Radix.Green9, Color.White, Radix.Green10);
+
+            _banner.Dock = DockStyle.Top; _banner.Height = 48; _banner.TextAlign = ContentAlignment.MiddleCenter;
+            _banner.Font = new Font("Segoe UI", 13, FontStyle.Bold); _banner.Text = "Click the green button";
+            _log.Multiline = true; _log.ReadOnly = true; _log.ScrollBars = ScrollBars.Vertical; _log.BorderStyle = BorderStyle.FixedSingle;
+            _log.BackColor = Color.White; _log.ForeColor = Radix.Slate12; _log.Dock = DockStyle.Fill; _log.Font = new Font("Consolas", 10);
+
+            _packInfo.Dock = DockStyle.Bottom; _packInfo.Height = 24; _packInfo.ForeColor = Radix.Slate11; _packInfo.Text = PackStatus.Read(PackRoot).Describe();
+            _swInfo.Dock = DockStyle.Bottom; _swInfo.Height = 24; _swInfo.ForeColor = Radix.Slate11; _swInfo.Text = "DriverFix v" + AppInfo.Version + " - checking for a newer version...";
+
+            _updateBtn.Text = "Update drivers"; _swBtn.Text = "Update software";
+            foreach (var b2 in new[] { _updateBtn, _swBtn }) { b2.Font = new Font("Segoe UI", 11, FontStyle.Bold); b2.Dock = DockStyle.Fill; b2.Margin = new Padding(0, 0, 8, 0); Radix.Style(b2, Radix.Slate4, Radix.Slate12, Radix.Slate5); }
+            _swBtn.Margin = new Padding(0);
+            _updateBtn.Click += (s, e) => UpdateNow(); _swBtn.Click += (s, e) => UpdateSoftware();
+            var bottom = new TableLayoutPanel { Dock = DockStyle.Bottom, Height = 56, ColumnCount = 2, RowCount = 1, Padding = new Padding(0, 8, 0, 0) };
+            bottom.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50)); bottom.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+            bottom.Controls.Add(_updateBtn, 0, 0); bottom.Controls.Add(_swBtn, 1, 0);
+
+            // Docking: the control added LAST sits outermost, so the two buttons are added after the info lines.
+            Controls.Add(_log); Controls.Add(_packInfo); Controls.Add(_swInfo); Controls.Add(bottom);
+            Controls.Add(_banner); Controls.Add(_update); Controls.Add(_other); Controls.Add(_audio); Controls.Add(_dry); Controls.Add(_go);
             AddLine("DriverFix v" + AppInfo.Version);
             SelfUpdate.CleanupOld(AppDomain.CurrentDomain.BaseDirectory);
             Shown += (s, e) => Task.Run(() => CheckSoftware(false));
@@ -88,15 +104,15 @@ namespace WifiFix.App
             {
                 _latest = SelfUpdate.CheckLatest();
                 string t; Color c;
-                if (_latest == null) { t = "DriverFix v" + AppInfo.Version + " - no published version found on GitHub (" + AppInfo.Repo + ")"; c = Color.DarkOrange; }
-                else if (ReleaseParser.IsNewer(AppInfo.Version, _latest.Version)) { t = "DriverFix v" + AppInfo.Version + " - NEW version " + _latest.Version + " available: click UPDATE SOFTWARE"; c = Color.DarkOrange; }
-                else { t = "DriverFix v" + AppInfo.Version + " - up to date (latest on GitHub: " + _latest.Version + ")"; c = Color.Green; }
+                if (_latest == null) { t = "DriverFix v" + AppInfo.Version + " - no published version found on GitHub (" + AppInfo.Repo + ")"; c = Color.FromArgb(0xF7, 0x6B, 0x15); }
+                else if (ReleaseParser.IsNewer(AppInfo.Version, _latest.Version)) { t = "DriverFix v" + AppInfo.Version + " - NEW version " + _latest.Version + " available: click UPDATE SOFTWARE"; c = Color.FromArgb(0xF7, 0x6B, 0x15); }
+                else { t = "DriverFix v" + AppInfo.Version + " - up to date (latest on GitHub: " + _latest.Version + ")"; c = Radix.Green10; }
                 BeginInvoke(new Action(() => { _swInfo.Text = t; _swInfo.ForeColor = c; }));
             }
             catch (Exception e)
             {
                 AddLine("Update check failed: " + e.Message);
-                BeginInvoke(new Action(() => { _swInfo.Text = "DriverFix v" + AppInfo.Version + " - could not check for updates (no internet?)"; _swInfo.ForeColor = Color.Red; }));
+                BeginInvoke(new Action(() => { _swInfo.Text = "DriverFix v" + AppInfo.Version + " - could not check for updates (no internet?)"; _swInfo.ForeColor = Color.FromArgb(0xE5, 0x48, 0x4D); }));
             }
         }
 
@@ -111,7 +127,7 @@ namespace WifiFix.App
                     CheckSoftware(true);
                     if (_latest == null || !ReleaseParser.IsNewer(AppInfo.Version, _latest.Version))
                     {
-                        BeginInvoke(new Action(() => Set(_latest == null ? "No published version found on GitHub" : "Already the latest version (v" + AppInfo.Version + ")", _latest == null ? Color.DarkOrange : Color.Green)));
+                        BeginInvoke(new Action(() => Set(_latest == null ? "No published version found on GitHub" : "Already the latest version (v" + AppInfo.Version + ")", _latest == null ? Color.FromArgb(0xF7, 0x6B, 0x15) : Radix.Green10)));
                         return;
                     }
                     var exe = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
@@ -127,7 +143,7 @@ namespace WifiFix.App
                 catch (Exception e)
                 {
                     AddLine("Software update failed: " + e.Message);
-                    BeginInvoke(new Action(() => Set("Software update FAILED - see log (is the stick read-only?)", Color.Red)));
+                    BeginInvoke(new Action(() => Set("Software update FAILED - see log (is the stick read-only?)", Color.FromArgb(0xE5, 0x48, 0x4D))));
                 }
                 finally { BeginInvoke(new Action(() => { SetBusy(false); _swBtn.Enabled = true; })); }
             });
@@ -144,7 +160,7 @@ namespace WifiFix.App
             Task.Run(() =>
             {
                 try { AutoUpdatePack(); }
-                catch (Exception e) { AddLine("Pack update error: " + e.Message); BeginInvoke(new Action(() => Set("Pack update failed - see log", Color.Red))); }
+                catch (Exception e) { AddLine("Pack update error: " + e.Message); BeginInvoke(new Action(() => Set("Pack update failed - see log", Color.FromArgb(0xE5, 0x48, 0x4D)))); }
                 BeginInvoke(new Action(() => SetBusy(false)));
             });
         }
@@ -159,7 +175,7 @@ namespace WifiFix.App
             if (!new WuaOnlineProvider(log).HasInternet())
             {
                 log.Info("No internet: offline pack not updated.");
-                BeginInvoke(new Action(() => Say("No internet - pack NOT updated", Color.Red)));
+                BeginInvoke(new Action(() => Say("No internet - pack NOT updated", Color.FromArgb(0xE5, 0x48, 0x4D))));
                 return;
             }
             log.Info("Internet found - checking for newer drivers for the offline pack (can take a few minutes)...");
@@ -175,10 +191,10 @@ namespace WifiFix.App
             BeginInvoke(new Action(() =>
             {
                 _packInfo.Text = PackStatus.Read(packRoot).Describe();
-                if (rep.Errors > 0 && rep.Downloaded == 0 && rep.UpToDate == 0) Say("Pack update failed (" + rep.Errors + " errors) - see log", Color.Red);
-                else if (rep.Downloaded > 0) Say("Pack UPDATED: " + rep.Downloaded + " new, " + rep.UpToDate + " already current", Color.Green);
-                else if (rep.UpToDate > 0) Say("Pack already up to date (" + rep.UpToDate + " checked)", Color.Green);
-                else Say("No drivers could be downloaded - check the internet and try again", Color.DarkOrange);
+                if (rep.Errors > 0 && rep.Downloaded == 0 && rep.UpToDate == 0) Say("Pack update failed (" + rep.Errors + " errors) - see log", Color.FromArgb(0xE5, 0x48, 0x4D));
+                else if (rep.Downloaded > 0) Say("Pack UPDATED: " + rep.Downloaded + " new, " + rep.UpToDate + " already current", Radix.Green10);
+                else if (rep.UpToDate > 0) Say("Pack already up to date (" + rep.UpToDate + " checked)", Radix.Green10);
+                else Say("No drivers could be downloaded - check the internet and try again", Color.FromArgb(0xF7, 0x6B, 0x15));
             }));
         }
 
@@ -267,15 +283,41 @@ namespace WifiFix.App
         {
             switch (o)
             {
-                case RunOutcome.Fixed: Set(_includeAudio || _includeOther ? "Done - drivers installed" : "WiFi working", Color.Green); break;
-                case RunOutcome.FixedRebootNeeded: Set("Driver installed - restart the PC", Color.DarkOrange); break;
-                case RunOutcome.AlreadyWorking: Set("WiFi already working - nothing to do", Color.Green); break;
-                case RunOutcome.NoWifiHardware: Set("No WiFi hardware found", Color.DarkOrange); break;
-                default: Set("Not fixed - plug in USB WiFi adapter and run again (see log)", Color.Red); break;
+                case RunOutcome.Fixed: Set(_includeAudio || _includeOther ? "Done - drivers installed" : "WiFi working", Radix.Green10); break;
+                case RunOutcome.FixedRebootNeeded: Set("Driver installed - restart the PC", Color.FromArgb(0xF7, 0x6B, 0x15)); break;
+                case RunOutcome.AlreadyWorking: Set("WiFi already working - nothing to do", Radix.Green10); break;
+                case RunOutcome.NoWifiHardware: Set("No WiFi hardware found", Color.FromArgb(0xF7, 0x6B, 0x15)); break;
+                default: Set("Not fixed - plug in USB WiFi adapter and run again (see log)", Color.FromArgb(0xE5, 0x48, 0x4D)); break;
             }
         }
 
         void Set(string text, Color c) { _banner.Text = text; _banner.ForeColor = c; }
+    }
+
+    /// <summary>Radix Themes colour scale (slate + green, light mode) and a flat rounded button style.</summary>
+    static class Radix
+    {
+        public static readonly Color Slate1 = Color.FromArgb(0xFC, 0xFC, 0xFD), Slate4 = Color.FromArgb(0xE8, 0xE8, 0xEC),
+            Slate5 = Color.FromArgb(0xE0, 0xE1, 0xE6), Slate11 = Color.FromArgb(0x60, 0x64, 0x6C), Slate12 = Color.FromArgb(0x1C, 0x20, 0x24),
+            Green9 = Color.FromArgb(0x30, 0xA4, 0x6C), Green10 = Color.FromArgb(0x2B, 0x9A, 0x66);
+
+        public static void Style(Button b, Color back, Color fore, Color hover)
+        {
+            b.FlatStyle = FlatStyle.Flat; b.FlatAppearance.BorderSize = 0; b.UseVisualStyleBackColor = false;
+            b.BackColor = back; b.ForeColor = fore; b.Cursor = Cursors.Hand;
+            b.FlatAppearance.MouseOverBackColor = hover; b.FlatAppearance.MouseDownBackColor = hover;
+            b.SizeChanged += (s, e) => Round(b, 8);
+            Round(b, 8);
+        }
+
+        static void Round(Control c, int r)
+        {
+            if (c.Width < 2 * r || c.Height < 2 * r) return;
+            var p = new System.Drawing.Drawing2D.GraphicsPath(); var d = r * 2;
+            p.AddArc(0, 0, d, d, 180, 90); p.AddArc(c.Width - d, 0, d, d, 270, 90);
+            p.AddArc(c.Width - d, c.Height - d, d, d, 0, 90); p.AddArc(0, c.Height - d, d, d, 90, 90); p.CloseAllFigures();
+            c.Region = new Region(p);
+        }
     }
 
     static class Program
