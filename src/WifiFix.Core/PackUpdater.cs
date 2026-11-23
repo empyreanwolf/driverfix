@@ -145,7 +145,7 @@ namespace WifiFix.Core
         const string Base = "https://www.catalog.update.microsoft.com/";
 
         readonly string? _debugDir;
-        bool _debugSaved;
+        int _debugCount;
         public MsCatalogSource(string? debugDir = null)
         {
             _debugDir = debugDir;
@@ -167,10 +167,11 @@ namespace WifiFix.Core
             using (var wc = Client()) html = wc.DownloadString(Base + "Search.aspx?q=" + Uri.EscapeDataString(query));
             Thread.Sleep(300); // be polite to the catalog
             var rows = CatalogParser.ParseSearch(html);
-            if (rows.Count == 0 && !_debugSaved && _debugDir != null)
+            if (rows.Count == 0 && _debugDir != null && _debugCount < 12)
             {
-                _debugSaved = true; // keep ONE sample of a page we could not read, so it can be fixed
-                try { Directory.CreateDirectory(_debugDir); File.WriteAllText(Path.Combine(_debugDir, "debug-search.html"), "<!-- query: " + query + " -->\r\n" + html); } catch { }
+                _debugCount++; // keep a sample page for each query we could not read (max 12), so problems can be diagnosed
+                var safe = System.Text.RegularExpressions.Regex.Replace(query, @"[^A-Za-z0-9]+", "_").Trim('_');
+                try { Directory.CreateDirectory(_debugDir); File.WriteAllText(Path.Combine(_debugDir, "debug-" + safe + ".html"), "<!-- query: " + query + " -->\r\n" + html); } catch { }
             }
             return rows;
         }
