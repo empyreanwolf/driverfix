@@ -1,0 +1,50 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{DE7ED3AA-1E76-4764-B8A9-687A2328B198}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WifiFix.Core", "src\WifiFix.Core\WifiFix.Core.csproj", "{BA0D27EA-9B37-4C20-9813-7BDDEFE87386}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{940175E6-EBAD-4E4A-A028-035049D0E80B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WifiFix.Core.Tests", "tests\WifiFix.Core.Tests\WifiFix.Core.Tests.csproj", "{66C24C12-68D2-409C-B0B0-CE583C72DDBB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WifiFix.App", "src\WifiFix.App\WifiFix.App.csproj", "{713633D7-D4D3-487F-B6D0-A70E01F64FD8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PackBuilder", "src\PackBuilder\PackBuilder.csproj", "{7B73B28F-4FD4-4188-9C9B-F8CD50C7BD48}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BA0D27EA-9B37-4C20-9813-7BDDEFE87386}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BA0D27EA-9B37-4C20-9813-7BDDEFE87386}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BA0D27EA-9B37-4C20-9813-7BDDEFE87386}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BA0D27EA-9B37-4C20-9813-7BDDEFE87386}.Release|Any CPU.Build.0 = Release|Any CPU
+		{66C24C12-68D2-409C-B0B0-CE583C72DDBB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{66C24C12-68D2-409C-B0B0-CE583C72DDBB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{66C24C12-68D2-409C-B0B0-CE583C72DDBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{66C24C12-68D2-409C-B0B0-CE583C72DDBB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{713633D7-D4D3-487F-B6D0-A70E01F64FD8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{713633D7-D4D3-487F-B6D0-A70E01F64FD8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{713633D7-D4D3-487F-B6D0-A70E01F64FD8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{713633D7-D4D3-487F-B6D0-A70E01F64FD8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7B73B28F-4FD4-4188-9C9B-F8CD50C7BD48}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7B73B28F-4FD4-4188-9C9B-F8CD50C7BD48}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7B73B28F-4FD4-4188-9C9B-F8CD50C7BD48}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7B73B28F-4FD4-4188-9C9B-F8CD50C7BD48}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{BA0D27EA-9B37-4C20-9813-7BDDEFE87386} = {DE7ED3AA-1E76-4764-B8A9-687A2328B198}
+		{66C24C12-68D2-409C-B0B0-CE583C72DDBB} = {940175E6-EBAD-4E4A-A028-035049D0E80B}
+		{713633D7-D4D3-487F-B6D0-A70E01F64FD8} = {DE7ED3AA-1E76-4764-B8A9-687A2328B198}
+		{7B73B28F-4FD4-4188-9C9B-F8CD50C7BD48} = {DE7ED3AA-1E76-4764-B8A9-687A2328B198}
+	EndGlobalSection
+EndGlobal

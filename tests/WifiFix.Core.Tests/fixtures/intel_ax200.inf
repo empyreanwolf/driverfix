@@ -1,0 +1,12 @@
+; Intel AX200 (comment: PCI\VEN_1111&DEV_2222 must be ignored)
+[Version]
+Signature="$WINDOWS NT$"
+[Manufacturer]
+%Intel%=Intel,NTamd64.10.0
+[Intel.NTamd64.10.0]
+%AX200%=Install, PCI\VEN_8086&DEV_2723&SUBSYS_00848086
+%AX200b%=Install, pci\ven_8086&dev_2723&subsys_00848086
+[Install]
+CopyFiles=x
+[Strings]
+Foo="PCI\VEN_9999&DEV_9999"

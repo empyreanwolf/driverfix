@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <PlatformTarget>x64</PlatformTarget>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyName>WifiFix</AssemblyName>
+    <RootNamespace>WifiFix.App</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+    <Reference Include="System.Management" />
+    <Reference Include="Microsoft.CSharp" />
+    <!-- Core sources are compiled in so the result is ONE exe (no extra dlls on the stick). -->
+    <Compile Include="..\WifiFix.Core\*.cs" Exclude="..\WifiFix.Core\obj\**;..\WifiFix.Core\bin\**" />
+  </ItemGroup>
+</Project>
