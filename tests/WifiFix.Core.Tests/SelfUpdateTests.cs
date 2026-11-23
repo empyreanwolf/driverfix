@@ -56,4 +56,13 @@ public class SelfUpdateTests
         Assert.Throws<InvalidDataException>(() => SelfUpdate.Swap(cur, dl));
         Assert.Equal("old", File.ReadAllText(cur));
     }
+
+    [Fact]
+    public void A_real_sized_DriverFix_exe_of_about_80KB_is_accepted()
+    {
+        var d = Dir(); var cur = Path.Combine(d, "DriverFix.exe"); var dl = Path.Combine(d, "DriverFix.new");
+        File.WriteAllText(cur, "old"); File.WriteAllBytes(dl, Exe(79_000));
+        SelfUpdate.Swap(cur, dl);
+        Assert.Equal(79_000, new FileInfo(cur).Length);
+    }
 }

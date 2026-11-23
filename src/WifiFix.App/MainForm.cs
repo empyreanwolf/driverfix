@@ -143,7 +143,7 @@ namespace WifiFix.App
                 catch (Exception e)
                 {
                     AddLine("Software update failed: " + e.Message);
-                    BeginInvoke(new Action(() => Set("Software update FAILED - see log (is the stick read-only?)", Color.FromArgb(0xE5, 0x48, 0x4D))));
+                    BeginInvoke(new Action(() => Set("Software update FAILED: " + e.Message, Color.FromArgb(0xE5, 0x48, 0x4D))));
                 }
                 finally { BeginInvoke(new Action(() => { SetBusy(false); _swBtn.Enabled = true; })); }
             });

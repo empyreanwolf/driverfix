@@ -25,7 +25,7 @@ namespace WifiFix.Core
 
     public static class SelfUpdate
     {
-        const long MinExeBytes = 100_000;
+        const long MinExeBytes = 20_000;   // rejects HTML error pages and truncated downloads; the real exe is ~80 KB
 
         /// <summary>Checks GitHub for the latest release. Returns null when none/unreachable. Network call.</summary>
         public static ReleaseInfo? CheckLatest()
