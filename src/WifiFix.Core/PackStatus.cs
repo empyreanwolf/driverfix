@@ -6,7 +6,7 @@ namespace WifiFix.Core
 {
     public static class AppInfo
     {
-        public const string Version = "1.9.14";
+        public const string Version = "1.9.15";
         public const string Repo = "empyreanwolf/driverfix";
     }
 

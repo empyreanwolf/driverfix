@@ -33,6 +33,23 @@ namespace WifiFix.Core
             new RegSetting(@"SYSTEM\Setup\LabConfig", "BypassRAMCheck", 1),
         };
 
+        public const string DownloadPage = "https://www.microsoft.com/software-download/windows11";
+        public const long WindowsIsoMinBytes = 3L * 1024 * 1024 * 1024;
+
+        /// <summary>An ISO in <paramref name="downloadsDir"/> written after <paramref name="since"/> and at least <paramref name="minBytes"/> long, with no browser partial file (.crdownload / .part / .tmp / .partial) for it.</summary>
+        public static string? FindFinishedIso(string downloadsDir, System.DateTime since, long minBytes)
+        {
+            if (!System.IO.Directory.Exists(downloadsDir)) return null;
+            foreach (var f in System.IO.Directory.GetFiles(downloadsDir, "*.iso"))
+            {
+                var fi = new System.IO.FileInfo(f);
+                if (fi.LastWriteTimeUtc < since || fi.Length < minBytes) continue;
+                if (new[] { ".crdownload", ".part", ".tmp", ".partial" }.Any(x => System.IO.File.Exists(f + x))) continue;
+                return f;
+            }
+            return null;
+        }
+
         public static bool IsWindows11(int build) => build >= 22000;
     }
 }

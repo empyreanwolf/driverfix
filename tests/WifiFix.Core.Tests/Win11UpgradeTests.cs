@@ -39,4 +39,29 @@ public class Win11UpgradeTests
         }
         finally { Directory.Delete(root, true); }
     }
+
+    [Fact]
+    public void Finished_download_is_a_new_iso_without_a_partial_file_beside_it()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "dl_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var since = DateTime.UtcNow.AddMinutes(-1);
+            File.WriteAllText(Path.Combine(dir, "old.iso"), "xxxx"); File.SetLastWriteTimeUtc(Path.Combine(dir, "old.iso"), since.AddHours(-5));
+            Assert.Null(Win11Upgrade.FindFinishedIso(dir, since, 3));                       // only an old ISO
+            File.WriteAllText(Path.Combine(dir, "Win11_25H2_English_x64.iso.crdownload"), "xxxx");
+            Assert.Null(Win11Upgrade.FindFinishedIso(dir, since, 3));                       // still downloading
+            File.WriteAllText(Path.Combine(dir, "Win11_25H2_English_x64.iso"), "xxxx");
+            Assert.Null(Win11Upgrade.FindFinishedIso(dir, since, 3));                       // .crdownload still present
+            File.Delete(Path.Combine(dir, "Win11_25H2_English_x64.iso.crdownload"));
+            Assert.EndsWith("Win11_25H2_English_x64.iso", Win11Upgrade.FindFinishedIso(dir, since, 3));
+            Assert.Null(Win11Upgrade.FindFinishedIso(dir, since, 1000));                    // too small to be Windows
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
+    public void Download_page_is_microsofts_official_windows11_page() =>
+        Assert.Equal("https://www.microsoft.com/software-download/windows11", Win11Upgrade.DownloadPage);
 }

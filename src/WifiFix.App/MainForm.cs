@@ -154,6 +154,37 @@ namespace WifiFix.App
             });
         }
 
+        /// <summary>No ISO on the stick: open Microsoft's official download page, then wait for the ISO to finish downloading and carry on by itself.</summary>
+        void WaitForIsoDownload()
+        {
+            var since = DateTime.UtcNow;
+            var downloads = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+            try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Win11Upgrade.DownloadPage) { UseShellExecute = true }); } catch { }
+            SetBusy(true); _w11Btn.Enabled = false;
+            Set("On the Microsoft page: choose 'Download Windows 11 Disk Image (ISO)'. DriverFix continues when it finishes.", Color.FromArgb(0xF7, 0x6B, 0x15));
+            AddLine("Waiting for the Windows 11 ISO to appear in " + downloads + " (up to 2 hours)...");
+            Task.Run(() =>
+            {
+                string found = null; long lastSize = -1; var end = DateTime.UtcNow.AddHours(2);
+                while (DateTime.UtcNow < end)
+                {
+                    System.Threading.Thread.Sleep(5000);
+                    var f = Win11Upgrade.FindFinishedIso(downloads, since, Win11Upgrade.WindowsIsoMinBytes);
+                    if (f == null) { lastSize = -1; continue; }
+                    var size = new FileInfo(f).Length;
+                    if (size == lastSize) { found = f; break; }   // size unchanged for 5 s = finished
+                    lastSize = size;
+                }
+                BeginInvoke(new Action(() =>
+                {
+                    SetBusy(false);
+                    if (found == null) { Set("No Windows 11 ISO arrived. Click the button again after downloading it.", Color.FromArgb(0xF7, 0x6B, 0x15)); return; }
+                    AddLine("ISO downloaded: " + Path.GetFileName(found));
+                    RunWin11Setup(found);
+                }));
+            });
+        }
+
         /// <summary>Button: switch off the unsupported-hardware checks, mount the Windows 11 ISO from the stick and start its setup in server mode (in-place upgrade, files kept).</summary>
         void UpgradeToWindows11()
         {
@@ -161,14 +192,12 @@ namespace WifiFix.App
             try { using (var k = Microsoft.Win32.RegistryKey.OpenBaseKey(Microsoft.Win32.RegistryHive.LocalMachine, Microsoft.Win32.RegistryView.Registry64).OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion")) int.TryParse(k?.GetValue("CurrentBuildNumber") as string, out build); } catch { }
             if (Win11Upgrade.IsWindows11(build)) { Set("This PC already runs Windows 11", Radix.Green10); return; }
             var iso = Win11Upgrade.FindIso(AppDomain.CurrentDomain.BaseDirectory);
-            if (iso == null)
-            {
-                using (var dlg = new OpenFileDialog { Title = "Choose the Windows 11 ISO (or put it in the iso folder on the stick)", Filter = "Windows 11 ISO|*.iso", InitialDirectory = AppDomain.CurrentDomain.BaseDirectory })
-                {
-                    if (dlg.ShowDialog() != DialogResult.OK) { Set("Put the Windows 11 ISO in the 'iso' folder next to DriverFix.exe, then click again", Color.FromArgb(0xF7, 0x6B, 0x15)); return; }
-                    iso = dlg.FileName;
-                }
-            }
+            if (iso == null) { WaitForIsoDownload(); return; }
+            RunWin11Setup(iso);
+        }
+
+        void RunWin11Setup(string iso)
+        {
             if (MessageBox.Show("Start the Windows 11 upgrade on this PC using:\n" + Path.GetFileName(iso) + "\n\nFiles and apps are kept. The PC restarts several times. Hardware checks (CPU / TPM / Secure Boot) are bypassed, which Microsoft does not support.",
                 "Force Windows 11 upgrade", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) != DialogResult.OK) return;
             SetBusy(true); Set("Preparing Windows 11 upgrade...", Color.Black);
