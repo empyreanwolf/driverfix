@@ -154,15 +154,25 @@ namespace WifiFix.App
             });
         }
 
-        /// <summary>Button: switch off the unsupported-hardware checks, then download and start Microsoft's Windows 11 Installation Assistant (in-place upgrade, files kept).</summary>
+        /// <summary>Button: switch off the unsupported-hardware checks, mount the Windows 11 ISO from the stick and start its setup in server mode (in-place upgrade, files kept).</summary>
         void UpgradeToWindows11()
         {
             int build = 0;
             try { using (var k = Microsoft.Win32.RegistryKey.OpenBaseKey(Microsoft.Win32.RegistryHive.LocalMachine, Microsoft.Win32.RegistryView.Registry64).OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion")) int.TryParse(k?.GetValue("CurrentBuildNumber") as string, out build); } catch { }
             if (Win11Upgrade.IsWindows11(build)) { Set("This PC already runs Windows 11", Radix.Green10); return; }
-            if (MessageBox.Show("Start the Windows 11 upgrade on this PC?\n\nFiles and apps are kept. The PC restarts several times and needs internet. Hardware checks (CPU / TPM / Secure Boot) are bypassed, which Microsoft does not support.",
+            var iso = Win11Upgrade.FindIso(AppDomain.CurrentDomain.BaseDirectory);
+            if (iso == null)
+            {
+                using (var dlg = new OpenFileDialog { Title = "Choose the Windows 11 ISO (or put it in the iso folder on the stick)", Filter = "Windows 11 ISO|*.iso", InitialDirectory = AppDomain.CurrentDomain.BaseDirectory })
+                {
+                    if (dlg.ShowDialog() != DialogResult.OK) { Set("Put the Windows 11 ISO in the 'iso' folder next to DriverFix.exe, then click again", Color.FromArgb(0xF7, 0x6B, 0x15)); return; }
+                    iso = dlg.FileName;
+                }
+            }
+            if (MessageBox.Show("Start the Windows 11 upgrade on this PC using:\n" + Path.GetFileName(iso) + "\n\nFiles and apps are kept. The PC restarts several times. Hardware checks (CPU / TPM / Secure Boot) are bypassed, which Microsoft does not support.",
                 "Force Windows 11 upgrade", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) != DialogResult.OK) return;
             SetBusy(true); Set("Preparing Windows 11 upgrade...", Color.Black);
+            var isoPath = iso;
             Task.Run(() =>
             {
                 try
@@ -171,20 +181,19 @@ namespace WifiFix.App
                         using (var k = Microsoft.Win32.RegistryKey.OpenBaseKey(Microsoft.Win32.RegistryHive.LocalMachine, Microsoft.Win32.RegistryView.Registry64).CreateSubKey(r.KeyPath))
                             k.SetValue(r.Name, r.Value, Microsoft.Win32.RegistryValueKind.DWord);
                     AddLine("Windows 11 hardware checks bypassed.");
-                    var exe = Path.Combine(Path.GetTempPath(), "Windows11InstallationAssistant.exe");
-                    AddLine("Downloading Microsoft's Windows 11 Installation Assistant (about 4 MB)...");
-                    BeginInvoke(new Action(() => Set("Downloading Windows 11 Installation Assistant...", Color.Black)));
-                    System.Net.ServicePointManager.SecurityProtocol |= (System.Net.SecurityProtocolType)3072;
-                    using (var wc = new System.Net.WebClient()) wc.DownloadFile(Win11Upgrade.AssistantUrl, exe);
-                    if (new FileInfo(exe).Length < 1000000) throw new InvalidDataException("The download was incomplete.");
-                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(exe, Win11Upgrade.AssistantArgs) { UseShellExecute = true });
-                    AddLine("Windows 11 upgrade started. Follow the Microsoft window.");
-                    BeginInvoke(new Action(() => Set("Windows 11 upgrade started - follow the Microsoft window", Radix.Green10)));
+                    AddLine("Mounting " + Path.GetFileName(isoPath) + " ...");
+                    BeginInvoke(new Action(() => Set("Mounting the Windows 11 ISO...", Color.Black)));
+                    var res = new ProcessRunner().Run("powershell.exe", "-NoProfile -Command \"$i = Mount-DiskImage -ImagePath '" + isoPath.Replace("'", "''") + "' -PassThru; ($i | Get-Volume).DriveLetter\"");
+                    var letter = (res.Output ?? "").Trim();
+                    if (letter.Length != 1 || !File.Exists(letter + @":\setup.exe")) throw new InvalidDataException("Could not open the ISO (is it a Windows 11 ISO?).");
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(letter + @":\setup.exe", Win11Upgrade.SetupArgs) { UseShellExecute = true, WorkingDirectory = letter + @":\" });
+                    AddLine("Windows 11 setup started. Follow the Microsoft window.");
+                    BeginInvoke(new Action(() => Set("Windows 11 setup started - follow the Microsoft window", Radix.Green10)));
                 }
                 catch (Exception e)
                 {
                     AddLine("Windows 11 upgrade failed: " + e.Message);
-                    BeginInvoke(new Action(() => Set("Windows 11 upgrade FAILED: " + e.Message + " (needs internet)", Color.FromArgb(0xE5, 0x48, 0x4D))));
+                    BeginInvoke(new Action(() => Set("Windows 11 upgrade FAILED: " + e.Message, Color.FromArgb(0xE5, 0x48, 0x4D))));
                 }
                 finally { BeginInvoke(new Action(() => SetBusy(false))); }
             });
