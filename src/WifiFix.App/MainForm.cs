@@ -25,6 +25,7 @@ namespace WifiFix.App
         readonly Button _updateBtn = new Button();
         readonly Label _packInfo = new Label();
         readonly Button _swBtn = new Button();
+        readonly Button _w11Btn = new Button();
         readonly Label _swInfo = new Label();
         ReleaseInfo? _latest;
         bool _autoUpdate;
@@ -34,7 +35,7 @@ namespace WifiFix.App
             // Look: Radix Themes (slate neutrals, green accent, 8px radius). Radix itself is a React library and cannot run in
             // WinForms, so its colour scale, radius and spacing are reproduced here.
             Text = "DriverFix v" + AppInfo.Version + " - detect PC and install drivers";
-            Width = 700; Height = 640; StartPosition = FormStartPosition.CenterScreen;
+            Width = 700; Height = 700; StartPosition = FormStartPosition.CenterScreen;
             BackColor = Radix.Slate1; ForeColor = Radix.Slate12; Font = new Font("Segoe UI", 9.5f); Padding = new Padding(16);
 
             foreach (var c in new[] { _other, _audio, _dry, _update }) { c.Dock = DockStyle.Top; c.Height = 28; c.ForeColor = Radix.Slate12; c.FlatStyle = FlatStyle.System; }
@@ -58,10 +59,14 @@ namespace WifiFix.App
             _updateBtn.Text = "Update drivers"; _swBtn.Text = "Update software";
             foreach (var b2 in new[] { _updateBtn, _swBtn }) { b2.Font = new Font("Segoe UI", 11, FontStyle.Bold); b2.Dock = DockStyle.Fill; b2.Margin = new Padding(0, 0, 8, 0); Radix.Style(b2, Radix.Slate4, Radix.Slate12, Radix.Slate5); }
             _swBtn.Margin = new Padding(0);
+            _w11Btn.Text = "Force Windows 11 upgrade"; _w11Btn.Font = new Font("Segoe UI", 11, FontStyle.Bold); _w11Btn.Dock = DockStyle.Fill; _w11Btn.Margin = new Padding(0, 8, 0, 0);
+            Radix.Style(_w11Btn, Radix.Slate4, Radix.Slate12, Radix.Slate5); _w11Btn.Click += (s, e) => UpgradeToWindows11();
             _updateBtn.Click += (s, e) => UpdateNow(); _swBtn.Click += (s, e) => UpdateSoftware();
-            var bottom = new TableLayoutPanel { Dock = DockStyle.Bottom, Height = 56, ColumnCount = 2, RowCount = 1, Padding = new Padding(0, 8, 0, 0) };
+            var bottom = new TableLayoutPanel { Dock = DockStyle.Bottom, Height = 112, ColumnCount = 2, RowCount = 2, Padding = new Padding(0, 8, 0, 0) };
+            bottom.RowStyles.Add(new RowStyle(SizeType.Percent, 50)); bottom.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
             bottom.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50)); bottom.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
             bottom.Controls.Add(_updateBtn, 0, 0); bottom.Controls.Add(_swBtn, 1, 0);
+            bottom.Controls.Add(_w11Btn, 0, 1); bottom.SetColumnSpan(_w11Btn, 2);
 
             // Docking: the control added LAST sits outermost, so the two buttons are added after the info lines.
             Controls.Add(_log); Controls.Add(_packInfo); Controls.Add(_swInfo); Controls.Add(bottom);
@@ -149,9 +154,45 @@ namespace WifiFix.App
             });
         }
 
+        /// <summary>Button: switch off the unsupported-hardware checks, then download and start Microsoft's Windows 11 Installation Assistant (in-place upgrade, files kept).</summary>
+        void UpgradeToWindows11()
+        {
+            int build = 0;
+            try { using (var k = Microsoft.Win32.RegistryKey.OpenBaseKey(Microsoft.Win32.RegistryHive.LocalMachine, Microsoft.Win32.RegistryView.Registry64).OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion")) int.TryParse(k?.GetValue("CurrentBuildNumber") as string, out build); } catch { }
+            if (Win11Upgrade.IsWindows11(build)) { Set("This PC already runs Windows 11", Radix.Green10); return; }
+            if (MessageBox.Show("Start the Windows 11 upgrade on this PC?\n\nFiles and apps are kept. The PC restarts several times and needs internet. Hardware checks (CPU / TPM / Secure Boot) are bypassed, which Microsoft does not support.",
+                "Force Windows 11 upgrade", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) != DialogResult.OK) return;
+            SetBusy(true); Set("Preparing Windows 11 upgrade...", Color.Black);
+            Task.Run(() =>
+            {
+                try
+                {
+                    foreach (var r in Win11Upgrade.BypassSettings)
+                        using (var k = Microsoft.Win32.RegistryKey.OpenBaseKey(Microsoft.Win32.RegistryHive.LocalMachine, Microsoft.Win32.RegistryView.Registry64).CreateSubKey(r.KeyPath))
+                            k.SetValue(r.Name, r.Value, Microsoft.Win32.RegistryValueKind.DWord);
+                    AddLine("Windows 11 hardware checks bypassed.");
+                    var exe = Path.Combine(Path.GetTempPath(), "Windows11InstallationAssistant.exe");
+                    AddLine("Downloading Microsoft's Windows 11 Installation Assistant (about 4 MB)...");
+                    BeginInvoke(new Action(() => Set("Downloading Windows 11 Installation Assistant...", Color.Black)));
+                    System.Net.ServicePointManager.SecurityProtocol |= (System.Net.SecurityProtocolType)3072;
+                    using (var wc = new System.Net.WebClient()) wc.DownloadFile(Win11Upgrade.AssistantUrl, exe);
+                    if (new FileInfo(exe).Length < 1000000) throw new InvalidDataException("The download was incomplete.");
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(exe, Win11Upgrade.AssistantArgs) { UseShellExecute = true });
+                    AddLine("Windows 11 upgrade started. Follow the Microsoft window.");
+                    BeginInvoke(new Action(() => Set("Windows 11 upgrade started - follow the Microsoft window", Radix.Green10)));
+                }
+                catch (Exception e)
+                {
+                    AddLine("Windows 11 upgrade failed: " + e.Message);
+                    BeginInvoke(new Action(() => Set("Windows 11 upgrade FAILED: " + e.Message + " (needs internet)", Color.FromArgb(0xE5, 0x48, 0x4D))));
+                }
+                finally { BeginInvoke(new Action(() => SetBusy(false))); }
+            });
+        }
+
         static string PackRoot => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "drivers");
 
-        void SetBusy(bool busy) { _go.Enabled = !busy; _updateBtn.Enabled = !busy; _swBtn.Enabled = !busy; }
+        void SetBusy(bool busy) { _go.Enabled = !busy; _updateBtn.Enabled = !busy; _swBtn.Enabled = !busy; _w11Btn.Enabled = !busy; }
 
         /// <summary>Button: refresh the offline pack now, with clear feedback in the banner.</summary>
         void UpdateNow()
