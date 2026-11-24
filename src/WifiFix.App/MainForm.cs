@@ -35,7 +35,9 @@ namespace WifiFix.App
             // Look: Radix Themes (slate neutrals, green accent, 8px radius). Radix itself is a React library and cannot run in
             // WinForms, so its colour scale, radius and spacing are reproduced here.
             Text = "DriverFix v" + AppInfo.Version + " - detect PC and install drivers";
-            Width = 700; Height = 700; StartPosition = FormStartPosition.CenterScreen;
+            Width = 700; StartPosition = FormStartPosition.CenterScreen;
+            // Never taller than the screen: on a 768-pixel laptop the bottom buttons would otherwise be cut off.
+            var wa = Screen.PrimaryScreen.WorkingArea; Height = Math.Min(700, wa.Height); MinimumSize = new Size(560, Math.Min(560, wa.Height));
             BackColor = Radix.Slate1; ForeColor = Radix.Slate12; Font = new Font("Segoe UI", 9.5f); Padding = new Padding(16);
 
             foreach (var c in new[] { _other, _audio, _dry, _update }) { c.Dock = DockStyle.Top; c.Height = 28; c.ForeColor = Radix.Slate12; c.FlatStyle = FlatStyle.System; }
